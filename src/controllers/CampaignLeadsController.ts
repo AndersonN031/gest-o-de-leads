@@ -1,46 +1,37 @@
 import { Handler } from "express";
-import { Prisma } from "@prisma/client";
 import { AddLeadRequestSchema, GetCampaignLeadsRequestSchema, UpdateLeadStatusRequestSchema } from "./schemas/CampaignRequestSchema";
 import { prisma } from "../database";
+import { CampaignsLeadsRepository, LeadsCampaignsWhereParams } from "../repositories/CampaignLeadsRepository";
+
 
 export class CampaignLeadsController {
+    constructor(
+        private readonly leadsCampaignsRepository: CampaignsLeadsRepository
+    ) { }
     getLeads: Handler = async (req, res, next) => {
         try {
-            const campaignId = Number(req.params.campaign)
+            const campaignId = Number(req.params.campaignId)
+
             const query = GetCampaignLeadsRequestSchema.parse(req.query);
             const { page = "1", pageSize = "10", name, status, sortBy = "name", order = "asc" } = query
 
             const pageNumber = Number(page);
             const pageSizeNumber = Number(pageSize);
 
-            const where: Prisma.LeadWhereInput = {
-                campaigns: {
-                    some: {
-                        campaignId: campaignId ? { equals: Number(campaignId) } : undefined // Condicional para garantir que 'campaignId' seja atribuído corretamente
-                    }
-                }
-            }
+            const where: LeadsCampaignsWhereParams = { campaignId }
 
-            if (name) where.name = { contains: name, mode: "insensitive" }
-            if (status) where.campaigns = { some: { status } }
+            if (name) where.name = { like: name, mode: "insensitive" }
+            if (status) where.status = status
 
-            const leads = await prisma.lead.findMany({
+            const leads = await this.leadsCampaignsRepository.find({
                 where,
-                orderBy: { [sortBy]: order },
-                skip: (pageNumber - 1) * pageSizeNumber,
-                take: pageSizeNumber,
-                include: {
-                    campaigns: {
-                        select: {
-                            campaignId: true,
-                            leadId: true,
-                            status: true
-                        }
-                    }
-                }
+                sortBy,
+                order,
+                include: { groups: true, campaigns: true },
+                status
             })
 
-            const total = await prisma.lead.count({ where })
+            const total = await this.leadsCampaignsRepository.count(where)
             res.json({
                 leads,
                 meta: {

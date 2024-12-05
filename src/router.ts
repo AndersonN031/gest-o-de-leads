@@ -1,18 +1,7 @@
 import { Router } from "express";
-import { HttpError } from "./errors/HttpError";
-import { LeadsController } from "./controllers/LeadsController";
-import { GroupsController } from "./controllers/GroupsController";
-import { CampaignController } from "./controllers/CampaignController";
-import { CampaignLeadsController } from "./controllers/CampaignLeadsController";
-import { LeadsGroupsController } from "./controllers/LeadsGroupsController";
+import { campaignsController, campaignsLeadsController, groupsController, leadsController, leadsGroupsController } from "./container";
 
 const router = Router();
-
-const leadsController = new LeadsController();
-const groupsController = new GroupsController();
-const campaignsController = new CampaignController();
-const campaignsLeadsController = new CampaignLeadsController();
-const leadsGroupsController = new LeadsGroupsController();
 
 router.get('/leads', leadsController.index);
 router.post('/leads', leadsController.create);

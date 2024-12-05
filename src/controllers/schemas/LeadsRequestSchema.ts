@@ -14,7 +14,7 @@ export const GetLeadsRequestSchema = z.object({
     pageSize: z.string().optional(),
     name: z.string().optional(),
     status: LeadStatusSchema.optional(),
-    sortBy: z.enum(["asc", "desc", "createdAt"]).optional(),
+    sortBy: z.enum(["name", "status", "createdAt"]).optional(),
     order: z.enum(["asc", "desc"]).optional()
 
 })
@@ -27,9 +27,9 @@ const CreateLeadRequestSchema = z.object({
 })
 
 const UpdateLeadRequestSchema = z.object({
-    name: z.string(),
-    email: z.string(),
-    phone: z.string(),
+    name: z.string().optional(),
+    email: z.string().optional(),
+    phone: z.string().optional(),
     status: LeadStatusSchema.optional()
 })
 
