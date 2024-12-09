@@ -11,50 +11,35 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CampaignLeadsController = void 0;
 const CampaignRequestSchema_1 = require("./schemas/CampaignRequestSchema");
-const database_1 = require("../database");
 class CampaignLeadsController {
-    constructor() {
+    constructor(campaignsRepository, leadsRepository) {
+        this.campaignsRepository = campaignsRepository;
+        this.leadsRepository = leadsRepository;
         this.getLeads = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const campaignId = Number(req.params.campaign);
+                const campaignId = Number(req.params.campaignId);
                 const query = CampaignRequestSchema_1.GetCampaignLeadsRequestSchema.parse(req.query);
                 const { page = "1", pageSize = "10", name, status, sortBy = "name", order = "asc" } = query;
-                const pageNumber = Number(page);
-                const pageSizeNumber = Number(pageSize);
-                const where = {
-                    campaigns: {
-                        some: {
-                            campaignId: campaignId ? { equals: Number(campaignId) } : undefined // Condicional para garantir que 'campaignId' seja atribuído corretamente
-                        }
-                    }
-                };
+                const limit = Number(pageSize);
+                const offset = (Number(page) - 1) * limit;
+                const where = { campaignId, campaignStatus: status };
                 if (name)
-                    where.name = { contains: name, mode: "insensitive" };
-                if (status)
-                    where.campaigns = { some: { status } };
-                const leads = yield database_1.prisma.lead.findMany({
+                    where.name = { like: name, mode: "insensitive" };
+                const leads = yield this.leadsRepository.find({
                     where,
-                    orderBy: { [sortBy]: order },
-                    skip: (pageNumber - 1) * pageSizeNumber,
-                    take: pageSizeNumber,
-                    include: {
-                        campaigns: {
-                            select: {
-                                campaignId: true,
-                                leadId: true,
-                                status: true
-                            }
-                        }
-                    }
+                    order,
+                    limit,
+                    offset,
+                    include: { campaigns: true }
                 });
-                const total = yield database_1.prisma.lead.count({ where });
+                const total = yield this.leadsRepository.count(where);
                 res.json({
                     leads,
                     meta: {
-                        page: pageNumber,
-                        pageSize: pageSizeNumber,
+                        page: Number(page),
+                        pageSize: limit,
                         total,
-                        totalPages: Math.ceil(total / pageSizeNumber)
+                        totalPages: Math.ceil(total / limit)
                     }
                 });
             }
@@ -64,14 +49,9 @@ class CampaignLeadsController {
         });
         this.addLead = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const body = CampaignRequestSchema_1.AddLeadRequestSchema.parse(req.body);
-                yield database_1.prisma.leadCampaign.create({
-                    data: {
-                        campaignId: Number(req.params.campaignId),
-                        leadId: body.leadId,
-                        status: body.status
-                    }
-                });
+                const campaignId = Number(req.params.campaignId);
+                const { leadId, status = "New" } = CampaignRequestSchema_1.AddLeadRequestSchema.parse(req.body);
+                this.campaignsRepository.addLead({ campaignId, leadId, status });
                 res.status(201).end();
             }
             catch (error) {
@@ -80,17 +60,11 @@ class CampaignLeadsController {
         });
         this.updateLeadStatus = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const body = CampaignRequestSchema_1.UpdateLeadStatusRequestSchema.parse(req.body);
-                const updatedLeadCampaign = yield database_1.prisma.leadCampaign.update({
-                    data: body,
-                    where: {
-                        leadId_campaignId: {
-                            campaignId: Number(req.params.campaignId),
-                            leadId: Number(req.params.leadId)
-                        }
-                    }
-                });
-                res.status(201).json(updatedLeadCampaign);
+                const campaignId = Number(req.params.campaignId);
+                const leadId = Number(req.params.leadId);
+                const { status } = CampaignRequestSchema_1.UpdateLeadStatusRequestSchema.parse(req.body);
+                yield this.campaignsRepository.updatedLeadStatus({ campaignId, leadId, status });
+                res.status(204).json({ message: "Status do lead atualizado com sucesso!" });
             }
             catch (error) {
                 next(error);
@@ -98,15 +72,10 @@ class CampaignLeadsController {
         });
         this.removeLead = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const removeLead = yield database_1.prisma.leadCampaign.delete({
-                    where: {
-                        leadId_campaignId: {
-                            campaignId: Number(req.params.campaignId),
-                            leadId: Number(req.params.leadId)
-                        }
-                    }
-                });
-                res.json({ removeLead });
+                const campaignId = Number(req.params.campaignId);
+                const leadId = Number(req.params.leadId);
+                yield this.campaignsRepository.removeLead(campaignId, leadId);
+                res.json({ message: "Lead removido da campanha com sucesso!" });
             }
             catch (error) {
                 next(error);

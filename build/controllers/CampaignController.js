@@ -10,14 +10,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CampaignController = void 0;
-const database_1 = require("../database");
 const CampaignRequestSchema_1 = require("./schemas/CampaignRequestSchema");
 const HttpError_1 = require("../errors/HttpError");
 class CampaignController {
-    constructor() {
+    constructor(campaignsRepository) {
+        this.campaignsRepository = campaignsRepository;
         this.index = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const campaigns = yield database_1.prisma.campaign.findMany();
+                const campaigns = yield this.campaignsRepository.find();
                 res.json(campaigns);
             }
             catch (error) {
@@ -27,7 +27,7 @@ class CampaignController {
         this.create = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const body = CampaignRequestSchema_1.CreateCampaignRequestSchema.parse(req.body);
-                const newCampaign = yield database_1.prisma.campaign.create({ data: body });
+                const newCampaign = yield this.campaignsRepository.create(body);
                 res.status(201).json(newCampaign);
             }
             catch (error) {
@@ -36,19 +36,10 @@ class CampaignController {
         });
         this.show = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const campaign = yield database_1.prisma.campaign.findUnique({
-                    where: { id: Number(req.params.id) },
-                    include: {
-                        leads: {
-                            include: {
-                                lead: true
-                            }
-                        }
-                    }
-                });
+                const campaign = yield this.campaignsRepository.findById(Number(req.params.id));
                 if (!campaign)
-                    throw new HttpError_1.HttpError(404, "Campanha não encontrada");
-                res.status(201).json(campaign);
+                    throw new HttpError_1.HttpError(404, "Campanha não encontrada!");
+                res.status(200).json(campaign);
             }
             catch (error) {
                 next(error);
@@ -58,10 +49,9 @@ class CampaignController {
             try {
                 const id = Number(req.params.id);
                 const body = CampaignRequestSchema_1.UpdateCampaignRequestSchema.parse(req.body);
-                const campaignExists = yield database_1.prisma.campaign.findUnique({ where: { id } });
-                if (!campaignExists)
+                const updatedCampaign = yield this.campaignsRepository.updateById(id, body);
+                if (!updatedCampaign)
                     throw new HttpError_1.HttpError(404, "Campanha não encontrado!");
-                const updatedCampaign = yield database_1.prisma.campaign.update({ data: body, where: { id } });
                 res.status(201).json(updatedCampaign);
             }
             catch (error) {
@@ -71,10 +61,9 @@ class CampaignController {
         this.delete = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const id = Number(req.params.id);
-                const campaignExists = yield database_1.prisma.campaign.findUnique({ where: { id } });
-                if (!campaignExists)
+                const deleteCampaign = yield this.campaignsRepository.deleteById(id);
+                if (!deleteCampaign)
                     throw new HttpError_1.HttpError(404, "Campanha não encontrado!");
-                const deleteCampaign = yield database_1.prisma.campaign.delete({ where: { id } });
                 res.status(201).json(deleteCampaign);
             }
             catch (error) {

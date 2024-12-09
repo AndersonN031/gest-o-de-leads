@@ -21,14 +21,14 @@ model Group {
 }
 
 model Lead {
-  id           Int            @id @default(autoincrement())
-  name         String         @db.VarChar(255)
-  email        String         @unique @db.VarChar(255)
-  phone        String         @db.VarChar(255)
-  status       LeadSatus      @default(New)
-  groups       Group[]        @relation("GroupLeads")
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id        Int            @id @default(autoincrement())
+  name      String         @db.VarChar(255)
+  email     String         @unique @db.VarChar(255)
+  phone     String         @db.VarChar(255)
+  status    LeadSatus      @default(New)
+  groups    Group[]        @relation("GroupLeads")
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
   campaigns LeadCampaign[]
 }
 
@@ -42,29 +42,28 @@ enum LeadSatus {
 }
 
 model Campaign {
-  id           Int            @id @default(autoincrement())
-  name         String         @db.VarChar(255)
-  description  String
-  startDate    DateTime
-  endDate      DateTime?
-  leads LeadCampaign[]
+  id          Int            @id @default(autoincrement())
+  name        String         @db.VarChar(255)
+  description String
+  startDate   DateTime
+  endDate     DateTime?
+  leads       LeadCampaign[]
 }
 
 model LeadCampaign {
   leadId     Int
   campaignId Int
-  status LeadCampaignStatus @default(New)
-  campaign   Campaign @relation(fields: [campaignId], references: [id])
-  lead       Lead     @relation(fields: [leadId], references: [id])
+  status     LeadCampaignStatus @default(New)
+  campaign   Campaign           @relation(fields: [campaignId], references: [id])
+  lead       Lead               @relation(fields: [leadId], references: [id])
 
   @@id([leadId, campaignId])
 }
 
-
 enum LeadCampaignStatus {
   New
   Engaged
-  folloUp_Scheduled
+  FollowUp_Scheduled
   Contacted
   Qualified
   Converted
@@ -72,5 +71,4 @@ enum LeadCampaignStatus {
   Disqualified
   Re_Engaged
   Opted_Out
-
 }

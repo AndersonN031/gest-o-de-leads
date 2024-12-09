@@ -10,37 +10,31 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LeadsController = void 0;
-const database_1 = require("../database");
 const LeadsRequestSchema_1 = require("./schemas/LeadsRequestSchema");
 const HttpError_1 = require("../errors/HttpError");
 class LeadsController {
-    constructor() {
+    constructor(leadRepository) {
         this.index = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const query = LeadsRequestSchema_1.GetLeadsRequestSchema.parse(req.query);
                 const { page = "1", pageSize = "10", name, status, sortBy = "name", order = "asc" } = query;
                 const pageNumber = Number(page);
-                const pageSizeNumber = Number(pageSize);
+                const limit = Number(pageSize);
+                const offset = (Number(page) - 1) * limit;
                 const where = {};
                 if (name)
-                    where.name = { contains: name, mode: "insensitive" };
+                    where.name = { like: name, mode: "insensitive" };
                 if (status)
                     where.status = status;
-                const leads = yield database_1.prisma.lead.findMany({
-                    where,
-                    skip: (pageNumber - 1) * pageSizeNumber,
-                    take: pageSizeNumber,
-                    orderBy: { [sortBy]: order }
-                });
-                const total = yield database_1.prisma.lead.count({ where });
+                const leads = yield this.leadsRepository.find({ where, sortBy, order, limit, offset });
+                const total = yield this.leadsRepository.count(where);
                 res.json({
                     data: leads,
                     meta: {
-                        page: pageNumber,
-                        pageSize: pageSize,
+                        page: Number(page),
+                        pageSize: limit,
                         total,
-                        totalPages: Math.ceil(total / pageSizeNumber),
-                        pageSizeNumber: pageSizeNumber
+                        totalPages: Math.ceil(total / limit),
                     }
                 });
             }
@@ -51,9 +45,12 @@ class LeadsController {
         this.create = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const body = LeadsRequestSchema_1.CreateLeadRequestSchema.parse(req.body);
-                const newLead = yield database_1.prisma.lead.create({
-                    data: body
-                });
+                if (!body.status)
+                    body.status = "New";
+                const newLead = yield this.leadsRepository.create(body);
+                // const newLead = await prisma.lead.create({
+                //     data: body
+                // })
                 res.status(201).json(newLead);
             }
             catch (error) {
@@ -62,13 +59,14 @@ class LeadsController {
         });
         this.show = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const lead = yield database_1.prisma.lead.findUnique({
-                    where: { id: Number(req.params.id) },
-                    include: {
-                        groups: true,
-                        campaigns: true
-                    }
-                });
+                const lead = yield this.leadsRepository.findById(Number(req.params.id));
+                // const lead = await prisma.lead.findUnique({
+                //     where: { id: Number(req.params.id) },
+                //     include: {
+                //         groups: true,
+                //         campaigns: true
+                //     }
+                // })
                 if (!lead)
                     throw new HttpError_1.HttpError(404, "Lead não encontrado");
                 res.json(lead);
@@ -79,16 +77,29 @@ class LeadsController {
         });
         this.update = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
+                const id = Number(req.params.id);
                 const body = LeadsRequestSchema_1.UpdateLeadRequestSchema.parse(req.body);
-                const existingLead = yield database_1.prisma.lead.findUnique({
-                    where: { id: Number(req.params.id) }
-                });
-                if (!existingLead)
+                const lead = yield this.leadsRepository.findById(id);
+                // const existingLead = await prisma.lead.findUnique({
+                //     where: { id: Number(req.params.id) }
+                // })
+                if (!lead)
                     throw new HttpError_1.HttpError(404, "Lead não encontrado");
-                const updatedLead = yield database_1.prisma.lead.update({
-                    where: { id: Number(req.params.id) },
-                    data: body
-                });
+                if (lead.status === "New" && body.status !== "Contacted") {
+                    throw new HttpError_1.HttpError(400, "Um novo lead deve ser contatado antes de ter seu status atualizado para outro valor.");
+                }
+                if (body.status && body.status === "Archived") {
+                    const now = new Date();
+                    const diffTime = Math.abs(now.getTime() - lead.updatedAt.getTime());
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    if (diffDays < 180)
+                        throw new HttpError_1.HttpError(400, "Um lead só pode ser arquivado após 6 meses de inatividade.");
+                }
+                const updatedLead = yield this.leadsRepository.updateById(id, body);
+                // const updatedLead = await prisma.lead.update({
+                //     where: { id: Number(req.params.id) },
+                //     data: body
+                // })
                 res.status(201).json(updatedLead);
             }
             catch (error) {
@@ -97,20 +108,24 @@ class LeadsController {
         });
         this.delete = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const existingLead = yield database_1.prisma.lead.findUnique({
-                    where: { id: Number(req.params.id) }
-                });
-                if (!existingLead)
+                const id = Number(req.params.id);
+                const leadExists = yield this.leadsRepository.findById(id);
+                // const existingLead = await prisma.lead.findUnique({
+                //     where: { id: Number(req.params.id) }
+                // })
+                if (!leadExists)
                     throw new HttpError_1.HttpError(404, "Lead não encontrado ou já foi excluído!");
-                const leads = yield database_1.prisma.lead.delete({
-                    where: { id: Number(req.params.id) }
-                });
+                const leads = yield this.leadsRepository.deleteById(id);
+                // const leads = await prisma.lead.delete({
+                //     where: { id: Number(req.params.id) }
+                // })
                 res.json(leads);
             }
             catch (error) {
                 next(error);
             }
         });
+        this.leadsRepository = leadRepository;
     }
 }
 exports.LeadsController = LeadsController;

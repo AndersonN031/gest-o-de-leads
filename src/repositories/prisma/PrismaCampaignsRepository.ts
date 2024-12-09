@@ -1,5 +1,5 @@
 import { Campaign } from "@prisma/client";
-import { CampaignsRepository, CreateCampaignsAttributes } from "../CampaignsRepository";
+import { AddLeadToCampaignAttributes, CampaignsRepository, CreateCampaignsAttributes } from "../CampaignsRepository";
 import { prisma } from "../../database";
 
 export class PrismaCampaignsRepository implements CampaignsRepository {
@@ -8,7 +8,16 @@ export class PrismaCampaignsRepository implements CampaignsRepository {
     }
 
     findById(id: number): Promise<Campaign | null> {
-        return prisma.campaign.findUnique({ where: { id } })
+        return prisma.campaign.findUnique({
+            where: { id },
+            include: {
+                leads: {
+                    include: {
+                        lead: true
+                    }
+                }
+            }
+        })
     }
 
     create(attributes: CreateCampaignsAttributes): Promise<Campaign> {
@@ -21,5 +30,29 @@ export class PrismaCampaignsRepository implements CampaignsRepository {
 
     deleteById(id: number): Promise<Campaign | null> {
         return prisma.campaign.delete({ where: { id } })
+    }
+
+    async addLead(attributes: AddLeadToCampaignAttributes): Promise<void> {
+        await prisma.leadCampaign.create({ data: attributes })
+    }
+
+    async updatedLeadStatus(attributes: AddLeadToCampaignAttributes): Promise<void> {
+        await prisma.leadCampaign.update({
+            data: { status: attributes.status },
+            where: {
+                leadId_campaignId: {
+                    campaignId: attributes.campaignId,
+                    leadId: attributes.leadId
+                }
+            }
+        })
+    }
+
+    async removeLead(campaignId: number, leadId: number): Promise<void> {
+        await prisma.leadCampaign.delete({
+            where: {
+                leadId_campaignId: { campaignId, leadId }
+            }
+        })
     }
 }

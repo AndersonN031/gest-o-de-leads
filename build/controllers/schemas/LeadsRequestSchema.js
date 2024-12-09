@@ -15,7 +15,7 @@ exports.GetLeadsRequestSchema = zod_1.z.object({
     pageSize: zod_1.z.string().optional(),
     name: zod_1.z.string().optional(),
     status: LeadStatusSchema.optional(),
-    sortBy: zod_1.z.enum(["asc", "desc", "createdAt"]).optional(),
+    sortBy: zod_1.z.enum(["name", "status", "createdAt"]).optional(),
     order: zod_1.z.enum(["asc", "desc"]).optional()
 });
 const CreateLeadRequestSchema = zod_1.z.object({
@@ -26,9 +26,9 @@ const CreateLeadRequestSchema = zod_1.z.object({
 });
 exports.CreateLeadRequestSchema = CreateLeadRequestSchema;
 const UpdateLeadRequestSchema = zod_1.z.object({
-    name: zod_1.z.string(),
-    email: zod_1.z.string(),
-    phone: zod_1.z.string(),
+    name: zod_1.z.string().optional(),
+    email: zod_1.z.string().optional(),
+    phone: zod_1.z.string().optional(),
     status: LeadStatusSchema.optional()
 });
 exports.UpdateLeadRequestSchema = UpdateLeadRequestSchema;

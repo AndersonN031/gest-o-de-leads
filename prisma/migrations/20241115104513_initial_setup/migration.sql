@@ -2,7 +2,7 @@
 CREATE TYPE "LeadSatus" AS ENUM ('New', 'Contacted', 'Qualified', 'Unresponsive', 'Disqualified', 'Archived');
 
 -- CreateEnum
-CREATE TYPE "LeadCampaignStatus" AS ENUM ('New', 'Engaged', 'folloUp_Scheduled', 'Contacted', 'Qualified', 'Converted', 'Unresposnvive', 'Disqualified', 'Re_Engaged', 'Opted_Out');
+CREATE TYPE "LeadCampaignStatus" AS ENUM ('New', 'Engaged', 'FollowUp_Scheduled', 'Contacted', 'Qualified', 'Converted', 'Unresposnvive', 'Disqualified', 'Re_Engaged', 'Opted_Out');
 
 -- CreateTable
 CREATE TABLE "Group" (

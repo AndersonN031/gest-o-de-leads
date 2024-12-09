@@ -11,11 +11,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.LeadsGroupsController = void 0;
 const CampaignRequestSchema_1 = require("./schemas/CampaignRequestSchema");
-const database_1 = require("../database");
-const HttpError_1 = require("../errors/HttpError");
 const LeadsRequestSchema_1 = require("./schemas/LeadsRequestSchema");
 class LeadsGroupsController {
-    constructor() {
+    constructor(groupsRepository, leadsRepository) {
+        this.groupsRepository = groupsRepository;
+        this.leadsRepository = leadsRepository;
         this.getLeadToGroup = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const groupId = Number(req.params.groupId);
@@ -23,30 +23,27 @@ class LeadsGroupsController {
                 const { page = "1", pageSize = "10", name, status, sortBy = "name", order = "asc" } = query;
                 const pageNumber = Number(page);
                 const pageSizeNumber = Number(pageSize);
-                const where = {
-                    groups: {
-                        some: { id: groupId }
-                    }
-                };
+                const where = { groupId };
+                const limit = Number(pageSize);
+                const offset = (pageNumber - 1) * limit;
                 if (name)
-                    where.name = { contains: name, mode: "insensitive" };
+                    where.name = { like: name, mode: "insensitive" };
                 if (status)
                     where.status = status;
-                const leads = yield database_1.prisma.lead.findMany({
+                const leads = yield this.leadsRepository.find({
                     where,
-                    orderBy: { [sortBy]: order },
-                    skip: (pageNumber - 1) * pageSizeNumber,
-                    take: pageSizeNumber,
-                    include: {
-                        groups: true
-                    }
+                    sortBy,
+                    order,
+                    limit,
+                    offset,
+                    include: { groups: true, campaigns: true }
                 });
-                const total = yield database_1.prisma.lead.count({ where });
+                const total = yield this.leadsRepository.count(where);
                 res.json({
                     leads,
                     meta: {
-                        page: pageNumber,
-                        pageSize: pageSizeNumber,
+                        page: Number(page),
+                        pageSize: limit,
                         total,
                         totalPages: Math.ceil(total / pageSizeNumber)
                     }
@@ -58,27 +55,10 @@ class LeadsGroupsController {
         });
         this.addLeadToGroup = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const { leadId } = CampaignRequestSchema_1.AddLeadRequestSchema.parse(req.body);
                 const groupId = Number(req.params.groupId);
-                const group = yield database_1.prisma.group.findUnique({
-                    where: { id: groupId },
-                });
-                if (!group)
-                    throw new HttpError_1.HttpError(404, "Grupo não encontrado");
-                const lead = yield database_1.prisma.lead.findUnique({
-                    where: { id: leadId },
-                });
-                if (!lead)
-                    throw new HttpError_1.HttpError(404, "Lead não encontrado");
-                const updatedGroup = yield database_1.prisma.group.update({
-                    where: { id: group.id },
-                    data: {
-                        leads: {
-                            connect: { id: leadId },
-                        },
-                    },
-                });
-                res.json({ message: "Lead adicionado ao grupo com sucesso", group: updatedGroup });
+                const { leadId } = CampaignRequestSchema_1.AddLeadRequestSchema.parse(req.body);
+                const updateGroup = yield this.groupsRepository.addLead(groupId, leadId);
+                res.status(201).json(updateGroup);
             }
             catch (error) {
                 next(error);
@@ -88,33 +68,8 @@ class LeadsGroupsController {
             try {
                 const groupId = Number(req.params.groupId);
                 const leadId = Number(req.params.leadId);
-                console.log("ID do grupo recebido:", groupId);
-                console.log("ID do lead recebido:", leadId);
-                if (isNaN(groupId) || isNaN(leadId)) {
-                    throw new HttpError_1.HttpError(400, "IDs inválidos");
-                }
-                const group = yield database_1.prisma.group.findUnique({
-                    where: { id: groupId },
-                });
-                if (!group)
-                    throw new HttpError_1.HttpError(404, "Grupo não encontrado");
-                const lead = yield database_1.prisma.lead.findUnique({
-                    where: { id: leadId },
-                });
-                if (!lead)
-                    throw new HttpError_1.HttpError(404, "Lead não encontrado");
-                const updatedGroup = yield database_1.prisma.group.update({
-                    where: { id: group.id },
-                    data: {
-                        leads: {
-                            disconnect: { id: leadId },
-                        },
-                    },
-                });
-                res.json({
-                    message: "Lead removido do grupo com sucesso!",
-                    group: updatedGroup
-                });
+                const updatedGroup = yield this.groupsRepository.removeLead(groupId, leadId);
+                res.json(updatedGroup);
             }
             catch (error) {
                 next(error);

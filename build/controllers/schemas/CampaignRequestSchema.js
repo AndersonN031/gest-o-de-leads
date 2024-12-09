@@ -17,7 +17,7 @@ exports.UpdateCampaignRequestSchema = zod_1.z.object({
 const LeadCampaignStatusSchema = zod_1.z.enum([
     "New",
     "Engaged",
-    "folloUp_Scheduled",
+    "FollowUp_Scheduled",
     "Contacted",
     "Qualified",
     "Converted",

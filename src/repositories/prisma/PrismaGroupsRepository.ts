@@ -23,7 +23,8 @@ export class PrismaGroupsRepository implements GroupsRepository {
     addLead(groupId: number, leadId: number): Promise<Group> {
         return prisma.group.update({
             where: {
-                id: groupId
+                id: groupId,
+                
             },
             data: {
                 leads: {
