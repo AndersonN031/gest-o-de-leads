@@ -3,7 +3,7 @@ import { CreateLeadAttributes, findLeadsParams, LeadsRepository, LeadsStatus, Le
 import { prisma } from "../../database";
 
 export class PrismaLeadsRepository implements LeadsRepository {
-    
+
     async find(params: findLeadsParams): Promise<Lead[]> {
         let where: Prisma.LeadWhereInput = {
             name: {
@@ -14,35 +14,22 @@ export class PrismaLeadsRepository implements LeadsRepository {
             },
             status: params.where?.status,
         }
+
         if (params.where?.groupId) {
-            where.groups = {some: {id: params.where.groupId}}
+            where.groups = { some: { id: params.where.groupId } }
         }
 
         if (params.where?.campaignId) {
-            where.campaigns = {some: {campaignId: params.where.campaignId}}
+            where.campaigns = { some: { campaignId: params.where.campaignId } }
         }
         return prisma.lead.findMany({
-            where: {
-                
-               
-                groups: {
-                    some: {
-                        id: params.where?.groupId
-                    }
-                },
-                campaigns: {
-                    some: {
-                        campaignId: params.where?.campaignId,
-
-                    }
-                }
-            },
+            where,
             orderBy: { [params.sortBy ?? "name"]: params.order },
             skip: params.offset,
             take: params.limit,
             include: {
-                groups: params.include?.groups,
-                campaigns: params.include?.campaigns,
+                groups: params.include?.groups ?? true,
+                campaigns: params.include?.campaigns ?? true,
 
             }
         })
@@ -70,13 +57,13 @@ export class PrismaLeadsRepository implements LeadsRepository {
             status: where?.status,
         }
         if (where?.groupId) {
-            prismaWhere.groups = {some: {id: where.groupId}}
+            prismaWhere.groups = { some: { id: where.groupId } }
         }
 
         if (where?.campaignId) {
-            prismaWhere.campaigns = {some: {campaignId: where.campaignId}}
+            prismaWhere.campaigns = { some: { campaignId: where.campaignId } }
         }
-        return prisma.lead.count({where: prismaWhere})
+        return prisma.lead.count({ where: prismaWhere })
     }
 
     async create(attributes: CreateLeadAttributes): Promise<Lead> {

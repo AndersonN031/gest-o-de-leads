@@ -1,5 +1,4 @@
 import { Handler } from "express";
-import { prisma } from "../database";
 import { CreateCampaignRequestSchema, UpdateCampaignRequestSchema } from "./schemas/CampaignRequestSchema";
 import { HttpError } from "../errors/HttpError";
 import { CampaignsRepository } from "../repositories/CampaignsRepository";
