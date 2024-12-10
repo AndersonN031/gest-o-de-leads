@@ -30,24 +30,13 @@ class PrismaLeadsRepository {
                 where.campaigns = { some: { campaignId: params.where.campaignId } };
             }
             return database_1.prisma.lead.findMany({
-                where: {
-                    groups: {
-                        some: {
-                            id: (_k = params.where) === null || _k === void 0 ? void 0 : _k.groupId
-                        }
-                    },
-                    campaigns: {
-                        some: {
-                            campaignId: (_l = params.where) === null || _l === void 0 ? void 0 : _l.campaignId,
-                        }
-                    }
-                },
-                orderBy: { [(_m = params.sortBy) !== null && _m !== void 0 ? _m : "name"]: params.order },
+                where,
+                orderBy: { [(_k = params.sortBy) !== null && _k !== void 0 ? _k : "name"]: params.order },
                 skip: params.offset,
                 take: params.limit,
                 include: {
-                    groups: (_o = params.include) === null || _o === void 0 ? void 0 : _o.groups,
-                    campaigns: (_p = params.include) === null || _p === void 0 ? void 0 : _p.campaigns,
+                    groups: (_m = (_l = params.include) === null || _l === void 0 ? void 0 : _l.groups) !== null && _m !== void 0 ? _m : true,
+                    campaigns: (_p = (_o = params.include) === null || _o === void 0 ? void 0 : _o.campaigns) !== null && _p !== void 0 ? _p : true,
                 }
             });
         });
