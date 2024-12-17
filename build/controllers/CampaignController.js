@@ -11,10 +11,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CampaignController = void 0;
 const CampaignRequestSchema_1 = require("./schemas/CampaignRequestSchema");
-const HttpError_1 = require("../errors/HttpError");
 class CampaignController {
-    constructor(campaignsRepository) {
+    constructor(campaignsRepository, campaignService) {
         this.campaignsRepository = campaignsRepository;
+        this.campaignService = campaignService;
         this.index = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const campaigns = yield this.campaignsRepository.find();
@@ -27,7 +27,7 @@ class CampaignController {
         this.create = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const body = CampaignRequestSchema_1.CreateCampaignRequestSchema.parse(req.body);
-                const newCampaign = yield this.campaignsRepository.create(body);
+                const newCampaign = yield this.campaignService.createCampaign(body);
                 res.status(201).json(newCampaign);
             }
             catch (error) {
@@ -36,9 +36,7 @@ class CampaignController {
         });
         this.show = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
-                const campaign = yield this.campaignsRepository.findById(Number(req.params.id));
-                if (!campaign)
-                    throw new HttpError_1.HttpError(404, "Campanha não encontrada!");
+                const campaign = yield this.campaignService.getCampaignById(Number(req.params.id));
                 res.status(200).json(campaign);
             }
             catch (error) {
@@ -49,9 +47,7 @@ class CampaignController {
             try {
                 const id = Number(req.params.id);
                 const body = CampaignRequestSchema_1.UpdateCampaignRequestSchema.parse(req.body);
-                const updatedCampaign = yield this.campaignsRepository.updateById(id, body);
-                if (!updatedCampaign)
-                    throw new HttpError_1.HttpError(404, "Campanha não encontrado!");
+                const updatedCampaign = yield this.campaignService.updateCampaign(id, body);
                 res.status(201).json(updatedCampaign);
             }
             catch (error) {
@@ -61,9 +57,7 @@ class CampaignController {
         this.delete = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const id = Number(req.params.id);
-                const deleteCampaign = yield this.campaignsRepository.deleteById(id);
-                if (!deleteCampaign)
-                    throw new HttpError_1.HttpError(404, "Campanha não encontrado!");
+                const deleteCampaign = yield this.campaignService.deleteCampaign(id);
                 res.status(201).json(deleteCampaign);
             }
             catch (error) {

@@ -12,36 +12,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CampaignLeadsController = void 0;
 const CampaignRequestSchema_1 = require("./schemas/CampaignRequestSchema");
 class CampaignLeadsController {
-    constructor(campaignsRepository, leadsRepository) {
+    constructor(campaignsRepository, campaignLeadsService) {
         this.campaignsRepository = campaignsRepository;
-        this.leadsRepository = leadsRepository;
+        this.campaignLeadsService = campaignLeadsService;
         this.getLeads = (req, res, next) => __awaiter(this, void 0, void 0, function* () {
             try {
                 const campaignId = Number(req.params.campaignId);
                 const query = CampaignRequestSchema_1.GetCampaignLeadsRequestSchema.parse(req.query);
-                const { page = "1", pageSize = "10", name, status, sortBy = "name", order = "asc" } = query;
-                const limit = Number(pageSize);
-                const offset = (Number(page) - 1) * limit;
-                const where = { campaignId, campaignStatus: status };
-                if (name)
-                    where.name = { like: name, mode: "insensitive" };
-                const leads = yield this.leadsRepository.find({
-                    where,
-                    order,
-                    limit,
-                    offset,
-                    include: { campaigns: true }
-                });
-                const total = yield this.leadsRepository.count(where);
-                res.json({
-                    leads,
-                    meta: {
-                        page: Number(page),
-                        pageSize: limit,
-                        total,
-                        totalPages: Math.ceil(total / limit)
-                    }
-                });
+                const { page = "1", pageSize = "10" } = query;
+                const result = yield this.campaignLeadsService.getAllCampaignsLeadsPaginated(campaignId, Object.assign(Object.assign({}, query), { page: +page, pageSize: +pageSize }));
+                res.status(200).json(result);
             }
             catch (error) {
                 next(error);
@@ -51,7 +31,7 @@ class CampaignLeadsController {
             try {
                 const campaignId = Number(req.params.campaignId);
                 const { leadId, status = "New" } = CampaignRequestSchema_1.AddLeadRequestSchema.parse(req.body);
-                this.campaignsRepository.addLead({ campaignId, leadId, status });
+                this.campaignLeadsService.createLeadToCampaign(campaignId, leadId, status);
                 res.status(201).end();
             }
             catch (error) {
