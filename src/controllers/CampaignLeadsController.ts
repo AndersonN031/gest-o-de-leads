@@ -44,7 +44,7 @@ export class CampaignLeadsController {
             const campaignId = Number(req.params.campaignId)
             const leadId = Number(req.params.leadId)
             const { status } = UpdateLeadStatusRequestSchema.parse(req.body);
-            await this.campaignsRepository.updatedLeadStatus({ campaignId, leadId, status })
+            this.campaignLeadsService.updateLeadCampaign(campaignId, leadId, status)
             res.status(204).json({ message: "Status do lead atualizado com sucesso!" });
         } catch (error) {
             next(error)
@@ -55,8 +55,8 @@ export class CampaignLeadsController {
         try {
             const campaignId = Number(req.params.campaignId)
             const leadId = Number(req.params.leadId)
-            await this.campaignsRepository.removeLead(campaignId, leadId)
-            res.json({ message: "Lead removido da campanha com sucesso!" })
+            await this.campaignLeadsService.deleteLeadToCampaign(campaignId, leadId)
+            res.status(200).json({ message: "Lead removido da campanha com sucesso!" })
         } catch (error) {
             next(error)
         }

@@ -48,16 +48,29 @@ export class CampaignsLeadsService {
     }
 
     async createLeadToCampaign(campaignId: number, leadId: number, status: LeadCampaignStatus) {
-        if (!campaignId || !leadId) throw new HttpError(400, "Campaign ID and Lead ID are required.");
-
         const leadData: AddLeadToCampaignAttributes = {
             campaignId,
             leadId,
             status
         };
-
         await this.campaignsRepository.addLead(leadData)
-        return {message: "Lead adicionada com sucesso na campanha!"};
+        return { message: "Lead adicionada com sucesso na campanha!" };
 
+    }
+
+    async updateLeadCampaign(campaignId: number, leadId: number, status: LeadCampaignStatus) {
+        if (!campaignId || !leadId) throw new HttpError(404, "Não foi possivel encontrar o ID da campanha ou do lead");
+        const campaignData: AddLeadToCampaignAttributes = {
+            campaignId,
+            leadId,
+            status
+        }
+        await this.campaignsRepository.updatedLeadStatus(campaignData);
+        return { message: "Lead atualizado com sucesso na campanha!" };
+    }
+
+    async deleteLeadToCampaign(campaignId: number, leadId: number) {
+        await this.campaignsRepository.removeLead(campaignId, leadId);
+        return { message: "Lead removido da campanha com sucesso!" };
     }
 }

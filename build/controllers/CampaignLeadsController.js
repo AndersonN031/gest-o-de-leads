@@ -43,7 +43,7 @@ class CampaignLeadsController {
                 const campaignId = Number(req.params.campaignId);
                 const leadId = Number(req.params.leadId);
                 const { status } = CampaignRequestSchema_1.UpdateLeadStatusRequestSchema.parse(req.body);
-                yield this.campaignsRepository.updatedLeadStatus({ campaignId, leadId, status });
+                this.campaignLeadsService.updateLeadCampaign(campaignId, leadId, status);
                 res.status(204).json({ message: "Status do lead atualizado com sucesso!" });
             }
             catch (error) {
@@ -54,8 +54,8 @@ class CampaignLeadsController {
             try {
                 const campaignId = Number(req.params.campaignId);
                 const leadId = Number(req.params.leadId);
-                yield this.campaignsRepository.removeLead(campaignId, leadId);
-                res.json({ message: "Lead removido da campanha com sucesso!" });
+                yield this.campaignLeadsService.deleteLeadToCampaign(campaignId, leadId);
+                res.status(200).json({ message: "Lead removido da campanha com sucesso!" });
             }
             catch (error) {
                 next(error);
