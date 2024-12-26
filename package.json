@@ -2,11 +2,13 @@
   "name": "07-projeto-final",
   "version": "1.0.0",
   "main": "index.js",
+  "engines": {
+    "node": "18"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsx watch src/server.ts",
     "start": "node build/server.js"
-
   },
   "keywords": [],
   "author": "",
